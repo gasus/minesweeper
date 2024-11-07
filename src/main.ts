@@ -178,7 +178,7 @@ const renderSettingsBlock = (parentElement: HTMLDivElement | null) => {
     max: FIELD_MAX_SIZE,
     value: FIELD_SIZE,
   });
-  fieldSizeRange.addEventListener("change", (e) => {
+  fieldSizeRange.addEventListener("input", (e) => {
     FIELD_SIZE = (e.target as HTMLInputElement)?.value;
     onReload();
   });
