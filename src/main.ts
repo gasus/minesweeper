@@ -11,6 +11,7 @@ const BOOM = "💥";
 const FLAG = "🚩";
 const SETTINGS_HEIGHT = 120;
 const MAX_CELL_SIZE = 60;
+const LONG_TOUCH_LIMIT = 500;
 let FIRST_CLICK = true;
 let FIELD_SIZE = "6";
 let FIELD_MIN_SIZE = "5";
@@ -18,9 +19,12 @@ let FIELD_MAX_SIZE = "20";
 let BOMB_PERCENT = 0.15;
 let GAME_STATE: GameState = {};
 let WIN_COUNT: number | undefined = undefined;
+let TOUCH_TIMER: null | number = null;
+let IS_LONG_TOUCH = false;
 
 const app = document.querySelector<HTMLDivElement>("#app");
 const gameField = createElement("div", { class: "game-field" });
+const isTouchDevice = "ontouchstart" in window && "ontouchend" in window;
 
 const createField = (size: number) => {
   gameField.innerHTML = "";
@@ -256,8 +260,7 @@ gameField.addEventListener("click", (e) => {
   onCellClick(id);
 });
 
-gameField.addEventListener("contextmenu", (e) => {
-  e.preventDefault();
+const onRightClick = (e: MouseEvent | TouchEvent) => {
   const element = e.target as HTMLInputElement;
   const id = element.dataset.id;
 
@@ -270,7 +273,40 @@ gameField.addEventListener("contextmenu", (e) => {
     GAME_STATE[id] = { ...GAME_STATE[id], isFlag: true };
     element.textContent = FLAG;
   }
-});
+};
+
+if (isTouchDevice) {
+  gameField.addEventListener("touchstart", (e) => {
+    if (!TOUCH_TIMER) {
+      TOUCH_TIMER = setTimeout(() => {
+        IS_LONG_TOUCH = true;
+        onRightClick(e);
+      }, LONG_TOUCH_LIMIT);
+    }
+  });
+
+  const resetTimer = (e: TouchEvent) => {
+    if (IS_LONG_TOUCH) e.preventDefault();
+
+    if (TOUCH_TIMER) {
+      clearTimeout(TOUCH_TIMER);
+      TOUCH_TIMER = null;
+      IS_LONG_TOUCH = false;
+    }
+  };
+
+  gameField.addEventListener("touchend", (e) => {
+    resetTimer(e);
+  });
+  gameField.addEventListener("touchcancel", (e) => {
+    resetTimer(e);
+  });
+} else {
+  gameField.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    onRightClick(e);
+  });
+}
 
 renderSettingsBlock(app);
 app?.appendChild(gameField);
